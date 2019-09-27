@@ -255,10 +255,12 @@ cmd_submit() {
 	hubflow_push_latest_changes_to_origin
 
 	# pull request details
-        PR_URL_FILE='./.pr'
-        rm -f "$PR_URL_FILE"
-	{ hub pull-request -b "$BASE" || die 'could not create pull request' ; } | tee "$PR_URL_FILE"
+    PR_URL_FILE='./.pr'
+    rm -f "$PR_URL_FILE"
+    { hub pull-request -b "$BASE" || die 'could not create pull request' ; } | tee "$PR_URL_FILE"
+    die 'bowei was here'
 	PR_URL="$(tail -n 1 "$PR_URL_FILE")"
+    rm -f "$PR_URL_FILE"
 
 	echo
 	echo "Summary of actions:"
