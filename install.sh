@@ -98,8 +98,10 @@ case "$1" in
 
         # also install https://github.com/github/hub
         # detect the OS and run the correct command
-        if ! hub --version >dev/null 2>/dev/null ; then
-            brew -v >/dev/null 2>/dev/null && brew install hub || { apt -v >/dev/null 2>/dev/null && apt install hub ; } || { echo 'Could not install hub' }
+        if hub --version >/dev/null 2>/dev/null ; then
+            echo "hub already installed at $(which hub)"
+	else
+            brew -v >/dev/null 2>/dev/null && brew install hub || { apt -v >/dev/null 2>/dev/null && apt install hub ; } || echo 'Could not install hub' ;
         fi
         exit
         ;;
