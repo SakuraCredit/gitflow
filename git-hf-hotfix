@@ -230,7 +230,65 @@ cmd_start() {
 	echo
 }
 
+cmd_submit() {
+	DEFINE_boolean edit false "Open an editor to edit the generated commit messages for merges" E
+	DEFINE_boolean again false "Submit a second time" g
+	#DEFINE_boolean notag false "don't tag this release" n
+	#DEFINE_boolean nobackmerge false "don't back-merge $MASTER_BRANCH to be a parent of $DEVELOP_BRANCH (using tag if applicable)" b
+	#DEFINE_string message "" "use the given pull-request message" m
+	parse_args "$@"
+	DEVELOP_BASE=${2:-$DEVELOP_BRANCH}
+	MASTER_BASE=${3:-$MASTER_BRANCH}
+	name_or_current
+
+	# sanity checks
+	require_branch "$BRANCH"
+	require_clean_working_tree
+	require_github_origin_repo
+	require_remote_available
+	hubflow_fetch_latest_changes_from_origin
+
+	if [ "$FLAGS_edit" = $FLAGS_FALSE ]; then
+		master_pr_message="$BRANCH"
+		develop_pr_message="backmerge-$BRANCH"
+		tag_message="$(echo $BRANCH | sed 's|^.*/||g')"
+	fi
+
+	# merge master into this branch to make sure it's up to date and is ready to go into master
+	git merge $(flag edit || echo --no-edit) --no-ff "$MASTER_BASE" || \
+	  die "There were merge conflicts."
+	# push to origin
+	hubflow_push_latest_changes_to_origin
+
+	# pull request details
+    PR_URL_FILE='./.pr'
+    rm -f "$PR_URL_FILE"
+    hub pull-request -b "$MASTER_BASE" -m "$master_pr_message" | tee "$PR_URL_FILE"
+    if ! test "${PIPESTATUS[0]}" = 0 && noflag again ; then rm -f "$PR_URL_FILE" ; die "Failed to create pull request, error ${PIPESTATUS[0]} . To overwrite an existing PR, use 'git hf feature submit -g'." ; fi
+    MASTER_PR_URL="$(tail -n 1 "$PR_URL_FILE")"
+    rm -f "$PR_URL_FILE"
+
+    # make a pr for to develop
+    rm -f "$PR_URL_FILE"
+    hub pull-request -b "$DEVELOP_BASE" -m "$develop_pr_message" | tee "$PR_URL_FILE"
+    if ! test "${PIPESTATUS[0]}" = 0 ; then rm -f "$PR_URL_FILE" ; die "Failed to create pull request, error ${PIPESTATUS[0]}" ; fi
+    DEVELOP_PR_URL="$(tail -n 1 "$PR_URL_FILE")"
+    rm -f "$PR_URL_FILE"
+
+	echo
+	echo "Summary of actions:"
+	echo "- The branch '$BRANCH' was pushed to '$ORIGIN'"
+	echo "- A Pull Request from '$BRANCH' to '$MASTER_BASE' was created at '$MASTER_PR_URL'"
+	echo "- A Pull Request from '$BRANCH' to '$DEVELOP_BASE' was created at '$DEVELOP_PR_URL'"
+	echo ""
+	echo "Once both Pull Requests have been accepted, finish the release with:"
+	echo ""
+	echo "     git hf hotfix finish $NAME"
+	echo
+}
+
 cmd_finish() {
+ 	DEFINE_boolean edit false "Open an editor to edit the generated commit messages for merges" E 
 	DEFINE_boolean fetch true "fetch from $ORIGIN before performing finish" F
 	DEFINE_boolean sign false "sign the release tag cryptographically" s
 	DEFINE_string signingkey "" "use the given GPG-key for the digital signature (implies -s)" u
@@ -246,6 +304,9 @@ cmd_finish() {
 	if [ "$FLAGS_signingkey" != "" ]; then
 		FLAGS_sign=$FLAGS_TRUE
 	fi
+	if [ "$FLAGS_edit" = $FLAGS_FALSE ]; then
+		FLAGS_message=$VERSION
+	fi 
 
 	# sanity checks
 	require_branch "$BRANCH"
@@ -266,17 +327,6 @@ cmd_finish() {
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
 
-	# try to merge into master
-	# in case a previous attempt to finish this release branch has failed,
-	# but the merge into master was successful, we skip it now
-	if ! git_is_branch_merged_into "$BRANCH" "$MASTER_BRANCH"; then
-		git checkout "$MASTER_BRANCH" || \
-		  die "Could not check out $MASTER_BRANCH."
-		git merge --no-ff -srecursive -Xtheirs "$BRANCH" || \
-		  die "There were merge conflicts."
-		  # TODO: What do we do now?
-	fi
-
 	if noflag notag; then
 		# try to tag the release
 		# in case a previous attempt to finish this release branch has failed,
@@ -292,23 +342,27 @@ cmd_finish() {
 		fi
 	fi
 
+	# try to merge into master
+	# in case a previous attempt to finish this release branch has failed,
+	# but the merge into master was successful, we skip it now
+	if ! git_is_branch_merged_into "$BRANCH" "$MASTER_BRANCH"; then
+		git checkout "$MASTER_BRANCH" || \
+		  die "Could not check out $MASTER_BRANCH."
+		git merge $(flag edit || echo --no-edit) --no-ff -srecursive -Xtheirs "$BRANCH" || \
+		  die "There were merge conflicts."
+		  # TODO: What do we do now?
+	fi
+
 	# try to merge into develop
+ 	# NOTE(bowei): backmerge seems to be a no-op now that we've moved the tag into the branch 
 	if noflag nobackmerge; then
 		# in case a previous attempt to finish this hotfix branch has failed,
 		# but the merge into develop was successful, we skip it now
-		if ! git_is_branch_merged_into "$MASTER_BRANCH" "$DEVELOP_BRANCH"; then
+		if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
 			git checkout "$DEVELOP_BRANCH" || \
 				die "Could not check out $DEVELOP_BRANCH."
-			# merge the master branch back into develop; this makes the master
-			# branch - and the new tag (if provided) - a parent of the development
-			# branch, which in turn lets you use 'git describe' on either branch
-			if noflag notag; then
-				git merge --no-ff "$tagname" || \
-					die "There were merge conflicts."
-			else
-				git merge --no-ff "$MASTER_BRANCH" || \
-					die "There were merge conflicts."
-			fi
+			git merge $(flag edit || echo --no-edit) --no-ff "$BRANCH" || \
+				die "There were merge conflicts."
 		fi
 	else
 		# in case a previous attempt to finish this hotfix branch has failed,
@@ -317,14 +371,14 @@ cmd_finish() {
 			git checkout "$DEVELOP_BRANCH" || \
 				die "Could not check out $DEVELOP_BRANCH."
 			# just merge the release branch into the development branch
-			git merge --no-ff "$BRANCH" || \
+			git merge $(flag edit || echo --no-edit) --no-ff "$BRANCH" || \
 				die "There were merge conflicts."
 		fi
 	fi
 
 	if flag push; then
 		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
-			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+			die "Could not push to $DEVELOP_BRANCH from $ORIGIN. Perhaps try 'git hf hotfix submit' to create some pull requests first?"
 		git push "$ORIGIN" "$MASTER_BRANCH" || \
 			die "Could not push to $MASTER_BRANCH from $ORIGIN."
 		if noflag notag; then
@@ -338,11 +392,11 @@ cmd_finish() {
 		# delete the remote branch first
 		if flag push ; then
 			git push "$ORIGIN" :"$BRANCH" || \
-				die "Could not delete remote branch"
+				echo "Could not delete remote branch"
 		fi
 
 		# delete the local branch afterwards
-		git branch -d "$BRANCH"
+		git branch -D "$BRANCH"
 	fi
 
 	echo
@@ -421,7 +475,7 @@ cmd_cancel() {
 	# delete the remote branch
 	if flag push ; then
 		git push "$ORIGIN" :"$BRANCH" || \
-			die "Could not delete the remote $BRANCH in $ORIGIN."
+			echo "Could not delete the remote $BRANCH in $ORIGIN."
 	fi
 
 	# delete local branch
@@ -431,6 +485,7 @@ cmd_cancel() {
 		fi
 
 		git branch -D "$BRANCH"
+		git tag -d "$(echo $BRANCH | sed 's|^.*/||g')"
 	fi
 
 	echo
