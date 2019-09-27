@@ -257,9 +257,9 @@ cmd_submit() {
 	# pull request details
     PR_URL_FILE='./.pr'
     rm -f "$PR_URL_FILE"
-    { hub pull-request -b "$BASE" || die 'could not create pull request' ; } | tee "$PR_URL_FILE"
-    die 'bowei was here'
-	PR_URL="$(tail -n 1 "$PR_URL_FILE")"
+    { hub pull-request -b "$BASE"  ; _EXIT_CODE="$?" ; } | tee "$PR_URL_FILE"
+    if ! test "$_EXIT_CODE" = 0 ; then die 'Failed to create pull request' ; fi
+    PR_URL="$(tail -n 1 "$PR_URL_FILE")"
     rm -f "$PR_URL_FILE"
 
 	echo
