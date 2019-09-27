@@ -255,71 +255,12 @@ cmd_submit() {
 	hubflow_push_latest_changes_to_origin
 
 	# pull request details
-	PR_FILE="./COMMIT_MSG"
-	PR_TITLE=
-	PR_DESC=
-
-	rm -f "$PR_FILE"
-
-	# ask the user for a pull request description
-	cat <<EOS > "$PR_FILE"
-
-# Please enter the description for your pull request. Lines starting
-# with '#' will be ignored, and an empty message aborts the request.
-#
-# The first line should be a short feature summary, no longer than
-# 72 characters.
-#
-# The subsequent lines should be a longer description of the feature,
-# including a summary of backwards-compatibility breaks, wrapped at
-# 80 characters.
-EOS
-	${VISUAL:-${EDITOR:-vi}} "$PR_FILE"
-
-	# extract pull request parameters from description
-	if [ -r "$PR_FILE" ]; then
-		PR_TITLE=$(head -n1 "$PR_FILE" | sed -e 's/^[[:space:]]+//' -e 's/"/\\"/g;' )
-		PR_DESC=$(tail -n+2 "$PR_FILE" | grep -v '^#' | sed -e 's/"/\\"/g;' | tr '\n' '\000' | sed -e 's/\x00/\\n/g;' )
-	fi
-
-	# ensure there's an adequate description
-	if [ -z "$PR_TITLE" ]; then
-		die "Aborting submission due to empty summary."
-	elif [ -z "$PR_DESC" ]; then
-		warn "You have left the description empty; the review may decide to reject your"
-		warn "pull request because of this."
-	fi
-
-	# submit pull request to GitHub and
-    resp=$(github_post \
-         "/repos/$GITHUB_ORIGIN/pulls" \
-         "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$BRANCH\",\"base\":\"$BASE\"}")
-
-	# did it succeed?
-	if echo "$resp" | grep "Validation Failed" > /dev/null ; then
-		# no, it did not
-		if echo "$resp" | grep "pull request already exists" > /dev/null ; then
-			die "A pull request already exists for this feature"
-		elif echo "$resp" | grep "No commits between" > /dev/null ; then
-			die "You need to make some commits for this feature before you can make a pull request"
-		else
-			warn "An unexpected error was returned from GitHub. Here is the raw response:"
-			warn
-			echo "$resp"
-			exit 1
-		fi
-	fi
-
-	# parse Pull Request URL from response
-        PR_URL=$(echo $resp |
-            awk -F"," '{for(i=1;i<=NF;i++){if($i~/html_url/){print $i"\n"}}}' |
-            grep 'pull' |
-            awk -F"\":" '{print $2}' |
-            awk -F"\"" '{print $2}')
-
-	if [ -z "$PR_URL" ]; then
-		die "Failed to create Pull Request"
-	fi
+    PR_URL_FILE='./.pr'
+    rm -f "$PR_URL_FILE"
+    hub pull-request -b "$BASE" | tee "$PR_URL_FILE"
+    if ! test "${PIPESTATUS[0]}" = 0 ; then rm -f "$PR_URL_FILE" ; die "Failed to create pull request, error ${PIPESTATUS[0]}" ; fi
+    PR_URL="$(tail -n 1 "$PR_URL_FILE")"
+    rm -f "$PR_URL_FILE"
 
 	echo
 	echo "Summary of actions:"
