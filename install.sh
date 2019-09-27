@@ -95,6 +95,14 @@ case "$1" in
         for script_file in $SCRIPT_FILES ; do
             install -v -m 0644 "$REPO_DIR/$script_file" "$INSTALL_INTO"
         done
+
+        # also install https://github.com/github/hub
+        # detect the OS and run the correct command
+        if hub --version >/dev/null 2>/dev/null ; then
+            echo "hub already installed at $(which hub)"
+	else
+            brew -v >/dev/null 2>/dev/null && brew install hub || { apt -v >/dev/null 2>/dev/null && apt install hub ; } || echo 'Could not install hub' ;
+        fi
         exit
         ;;
 esac
