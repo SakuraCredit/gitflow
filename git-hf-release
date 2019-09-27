@@ -303,14 +303,6 @@ cmd_finish() {
 		fi
 	fi
 
-	# delete branch
-	if noflag keep; then
-		if [ "$BRANCH" = "$(git_current_branch)" ]; then
-			git checkout "$MASTER_BRANCH"
-		fi
-		git branch -d "$BRANCH"
-	fi
-
 	if flag push; then
 		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
 			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
@@ -324,6 +316,14 @@ cmd_finish() {
 			git push "$ORIGIN" :"$BRANCH" || \
 				die "Could not delete the remote $BRANCH in $ORIGIN."
 		fi
+	fi
+
+	# delete branch
+	if noflag keep; then
+		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+			git checkout "$MASTER_BRANCH"
+		fi
+		git branch -d "$BRANCH"
 	fi
 
 	echo

@@ -390,6 +390,9 @@ cmd_finish() {
 		die "feature merge failed"
 	fi
 
+	# if we merged locally, push those changes up to origin
+	hubflow_push_latest_changes_to_origin
+
 	# when no merge conflict is detected, just clean up the feature branch
 	# delete branch
 	if flag fetch; then
@@ -398,9 +401,6 @@ cmd_finish() {
 
 	# switch to the develop branch
 	hubflow_change_branch "$DEVELOP_BRANCH"
-
-	# if we merged locally, push those changes up to origin
-	hubflow_push_latest_changes_to_origin
 
 	# delete the local branch if it is no longer needed
 	if noflag keep; then
