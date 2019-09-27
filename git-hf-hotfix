@@ -322,6 +322,17 @@ cmd_finish() {
 		fi
 	fi
 
+	if flag push; then
+		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
+			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+		git push "$ORIGIN" "$MASTER_BRANCH" || \
+			die "Could not push to $MASTER_BRANCH from $ORIGIN."
+		if noflag notag; then
+			git push --tags "$ORIGIN" || \
+				die "Could not push tags to $ORIGIN."
+		fi
+	fi
+
 	# delete branch
 	if noflag keep; then
 		# delete the remote branch first
@@ -332,17 +343,6 @@ cmd_finish() {
 
 		# delete the local branch afterwards
 		git branch -d "$BRANCH"
-	fi
-
-	if flag push; then
-		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
-			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
-		git push "$ORIGIN" "$MASTER_BRANCH" || \
-			die "Could not push to $MASTER_BRANCH from $ORIGIN."
-		if noflag notag; then
-			git push --tags "$ORIGIN" || \
-				die "Could not push tags to $ORIGIN."
-		fi
 	fi
 
 	echo
