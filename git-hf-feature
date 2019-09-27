@@ -258,7 +258,7 @@ cmd_submit() {
     PR_URL_FILE='./.pr'
     rm -f "$PR_URL_FILE"
     { hub pull-request -b "$BASE"  ; _EXIT_CODE="$?" ; } | tee "$PR_URL_FILE"
-    if ! test "$_EXIT_CODE" = 0 ; then rm -f "$PR_URL_FILE" ; die 'Failed to create pull request' ; fi
+    if ! test "$_EXIT_CODE" = 0 ; then rm -f "$PR_URL_FILE" ; die "Failed to create pull request, error $_EXIT_CODE" ; fi
     PR_URL="$(tail -n 1 "$PR_URL_FILE")"
     rm -f "$PR_URL_FILE"
 
