@@ -101,7 +101,7 @@ case "$1" in
         if hub --version >/dev/null 2>/dev/null ; then
             echo "hub already installed at $(which hub)"
 	else
-            brew -v >/dev/null 2>/dev/null && brew install hub || { apt -v >/dev/null 2>/dev/null && apt install hub ; } || echo 'Could not install hub' ;
+            su "$SUDO_USER" -c 'brew -v >/dev/null 2>/dev/null && brew install hub' || { apt -v >/dev/null 2>/dev/null && apt install hub ; } || echo 'Could not install hub' ;
         fi
         exit
         ;;
