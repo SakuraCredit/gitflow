@@ -148,10 +148,20 @@ require_base_is_on_develop() {
 	fi
 }
 
+require_no_existing_hotfix_branches() {
+	local hotfix_prefix=$(git config --get hubflow.prefix.hotfix)
+	local hotfix_branches=$(echo "$(git_local_branches)" | grep "^$hotfix_prefix")
+	local first_branch=$(echo ${hotfix_branches} | head -n1)
+	first_branch=${first_branch#$hotfix_prefix}
+	[ -z "$hotfix_branches" ] || \
+		die "There is an existing hotfix branch ($first_branch). Finish that one first."
+}
+
 require_no_existing_release_branches() {
-	local release_branches=$(echo "$(git_local_branches)" | grep "^$PREFIX")
+        local release_prefix=$(git config --get hubflow.prefix.release)
+	local release_branches=$(echo "$(git_local_branches)" | grep "^$release_prefix")
 	local first_branch=$(echo ${release_branches} | head -n1)
-	first_branch=${first_branch#$PREFIX}
+	first_branch=${first_branch#$release_prefix}
 	[ -z "$release_branches" ] || \
 		die "There is an existing release branch ($first_branch). Finish that one first."
 }
@@ -171,6 +181,7 @@ cmd_start() {
 	fi
 	require_base_is_on_develop
 	require_no_existing_release_branches
+	require_no_existing_hotfix_branches
 
 	# sanity checks
 	require_clean_working_tree
