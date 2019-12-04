@@ -321,6 +321,8 @@ cmd_finish() {
 	fi
 
 	if noflag notag; then
+		# first pull the correct branch
+		git checkout "$BRANCH" || die "Could not check out $BRANCH."
 		# try to tag the release in the branch
 		# in case a previous attempt to finish this release branch has failed,
 		# but the tag was set successful, we skip it now
