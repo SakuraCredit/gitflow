@@ -85,10 +85,10 @@ cmd_update() {
 		git fetch --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
 		git prune # clean up weird dangling objects
 		# https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore
-		local tmpf="$(mktemp)"
-                git branch -vv | grep origin > "$tmpf"
-		git branch -r | awk '{print $1}' | egrep -v -f "$tmpf" | awk '{print $1}' | xargs git branch -d
-		rm "$tmpf"
+		#local tmpf="$(mktemp)"
+                #git branch -vv | grep origin > "$tmpf"
+		#git branch -r | awk '{print $1}' | egrep -v -f "$tmpf" | awk '{print $1}' | xargs git branch -d
+		#rm "$tmpf"
 	fi
 
 	# all done
