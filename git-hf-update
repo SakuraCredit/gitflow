@@ -83,6 +83,9 @@ cmd_update() {
 	# drop any branches that have disappeared from origin
 	if flag prune ; then
 		git fetch --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
+		git prune # clean up weird dangling objects
+		# https://stackoverflow.com/questions/13064613/how-to-prune-local-tracking-branches-that-do-not-exist-on-remote-anymore
+		git branch -r | awk '{print $1}' | egrep -v -f /dev/fd/0 <(git branch -vv | grep origin) | awk '{print $1}' | xargs git branch -d
 	fi
 
 	# all done
