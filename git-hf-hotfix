@@ -532,3 +532,13 @@ cmd_pull() {
 cmd_push() {
 	git hf push "$@"
 }
+
+cmd_auto() {
+	local tag="$(git describe --abbrev=0)"
+	local num="$( echo "$tag" | grep -E -o '[0-9]+$' )"
+	local nexttag="$(echo "$tag" | sed "s/$num$/$((num+1))/g")"
+
+	git hf pull
+	git hf hotfix start "$nexttag"
+	git hf hotfix submit "$nexttag"
+}
