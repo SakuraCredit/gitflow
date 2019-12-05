@@ -45,7 +45,7 @@
 #
 
 HUBFLOW_VERSION=1.5.4a6
-HUBFLOW_REPO=https://github.com/datasift/gitflow
+HUBFLOW_REPO=https://github.com/sakuracredit/gitflow
 
 #
 # Common functionality
