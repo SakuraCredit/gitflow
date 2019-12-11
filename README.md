@@ -9,7 +9,7 @@ for [DataSift's HubFlow branching model](http://datasift.github.com/gitflow/), w
 Installation
 ------------
 
-1. `git clone git@github.com:datasift/gitflow.git && cd gitflow && sudo ./install.sh`
+1. `git clone https://github.com/SakuraCredit/gitflow.git && cd gitflow && sudo ./install.sh`
 
 Windows users will need something like Cygwin in order to use this extension.
 
