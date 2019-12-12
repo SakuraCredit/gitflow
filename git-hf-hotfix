@@ -391,10 +391,11 @@ cmd_finish() {
 	fi
 
 	if flag push; then
-		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
-			die "Could not push to $DEVELOP_BRANCH from $ORIGIN. Perhaps try 'git hf hotfix submit' to create some pull requests first?"
 		git push "$ORIGIN" "$MASTER_BRANCH" || \
 			die "Could not push to $MASTER_BRANCH from $ORIGIN."
+		sleep 0.1
+		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
+			die "Could not push to $DEVELOP_BRANCH from $ORIGIN. Perhaps try 'git hf hotfix submit' to create some pull requests first?"
 		if noflag notag; then
 			git push --tags "$ORIGIN" || \
 				die "Could not push tags to $ORIGIN."
