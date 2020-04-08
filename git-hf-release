@@ -46,6 +46,7 @@ require_hubflow_initialized
 hubflow_load_settings
 VERSION_PREFIX=$(eval "echo `git config --get hubflow.prefix.versiontag`")
 PREFIX=$(git config --get hubflow.prefix.release)
+HOTFIX_PREFIX=$(git config --get hubflow.prefix.hotfix)
 
 usage() {
 	echo "usage: git hf release [list] [-v]"
@@ -130,6 +131,7 @@ parse_args() {
 	# read arguments into global variables
 	VERSION=$1
 	BRANCH=$PREFIX$VERSION
+	HOTFIX_BRANCH=$HOTFIX_PREFIX$VERSION
 }
 
 require_version_arg() {
@@ -150,7 +152,7 @@ require_base_is_on_develop() {
 
 require_no_existing_hotfix_branches() {
 	local hotfix_prefix=$(git config --get hubflow.prefix.hotfix)
-	local hotfix_branches=$(echo "$(git_local_branches)" | grep "^$hotfix_prefix")
+	local hotfix_branches=$({ echo "$(git_local_branches)" | grep "^$hotfix_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$hotfix_prefix" ; })
 	local first_branch=$(echo ${hotfix_branches} | head -n1)
 	first_branch=${first_branch#$hotfix_prefix}
 	[ -z "$hotfix_branches" ] || \
@@ -159,7 +161,7 @@ require_no_existing_hotfix_branches() {
 
 require_no_existing_release_branches() {
         local release_prefix=$(git config --get hubflow.prefix.release)
-	local release_branches=$(echo "$(git_local_branches)" | grep "^$release_prefix")
+	local release_branches=$({ echo "$(git_local_branches)" | grep "^$release_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$release_prefix" ; })
 	local first_branch=$(echo ${release_branches} | head -n1)
 	first_branch=${first_branch#$release_prefix}
 	[ -z "$release_branches" ] || \
@@ -186,6 +188,9 @@ cmd_start() {
 	# sanity checks
 	require_clean_working_tree
 	require_branch_absent "$BRANCH"
+	require_branch_absent "$ORIGIN/$BRANCH"
+	require_branch_absent "$HOTFIX_BRANCH"
+	require_branch_absent "$ORIGIN/$HOTFIX_BRANCH"
 	require_tag_absent "$VERSION_PREFIX$VERSION"
 	if noflag nofetch; then
 		git fetch -q "$ORIGIN" "$DEVELOP_BRANCH"
@@ -460,7 +465,14 @@ cmd_cancel() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	#require_branch "$BRANCH"
+	if ! has "$BRANCH" $(git_all_branches); then
+	    if flag fetch ; then
+	        git fetch -q "$ORIGIN" "$BRANCH" || true
+	    fi
+	    git checkout "$BRANCH" ||
+	        die "Branch $BRANCH could not be found and is required."
+	fi
 	require_clean_working_tree
 	if flag push ; then
 		git push "$ORIGIN" "$BRANCH" || die "Could not push release branch up to $ORIGIN"
