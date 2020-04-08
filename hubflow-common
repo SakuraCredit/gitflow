@@ -44,7 +44,7 @@
 # Common variables
 #
 
-HUBFLOW_VERSION=1.5.4a12
+HUBFLOW_VERSION=1.5.4b001
 HUBFLOW_REPO=https://github.com/sakuracredit/gitflow
 
 #
@@ -431,7 +431,7 @@ hubflow_push_latest_changes_to_origin() {
 }
 
 hubflow_get_latest_version_number() {
-	LATEST="`git ls-remote --tags https://github.com/datasift/gitflow | grep -v '\^' | tail -n 1 | cut -d / -f 3`"
+	LATEST="`git ls-remote --tags https://github.com/sakuracredit/gitflow | grep -v '\^' | tail -n 1 | cut -d / -f 3`"
 
 	echo $LATEST
 }
