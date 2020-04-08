@@ -457,7 +457,15 @@ cmd_cancel() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	#require_branch "$BRANCH"
+	if ! has "$BRANCH" $(git_all_branches); then
+	    if flag fetch ; then
+	        git fetch -q "$ORIGIN" "$BRANCH" || true
+	    fi
+        git checkout "$BRANCH" ||
+            die "Branch $BRANCH could not be found and is required."
+    fi
+
 	require_clean_working_tree
 	if flag push ; then
 		git push "$ORIGIN" "$BRANCH" || die "Could not push hotfix branch up to $ORIGIN"
