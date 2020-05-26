@@ -159,6 +159,21 @@ require_no_existing_hotfix_branches() {
 		die "There is an existing hotfix branch ($first_branch). Finish that one first."
 }
 
+remove_existing_hotfix_and_release_branches() {
+	local hotfix_prefix=$(git config --get hubflow.prefix.hotfix)
+	local hotfix_branches=$({ echo "$(git_local_branches)" | grep "^$hotfix_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$hotfix_prefix" ; })
+	echo "$hotfix_branches" | rev |  cut -d/ -f1 | rev | grep -v '^$' | while read hotfix_branch ; do
+		echo git hf hotfix cancel -f "$hotfix_branch"
+		git hf hotfix cancel -f "$hotfix_branch"
+	done
+        local release_prefix=$(git config --get hubflow.prefix.release)
+	local release_branches=$({ echo "$(git_local_branches)" | grep "^$release_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$release_prefix" ; })
+	echo "$release_branches" | rev | cut -d/ -f1 | rev | grep -v '^$' | while read release_branch ; do
+		echo git hf release cancel -f "$release_branch"
+		git hf release cancel -f "$release_branch"
+	done
+}
+
 require_no_existing_release_branches() {
         local release_prefix=$(git config --get hubflow.prefix.release)
 	local release_branches=$({ echo "$(git_local_branches)" | grep "^$release_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$release_prefix" ; })
@@ -248,7 +263,8 @@ cmd_submit() {
 	hubflow_fetch_latest_changes_from_origin
 
 	if [ "$FLAGS_edit" = $FLAGS_FALSE ]; then
-		master_pr_message="$BRANCH"
+		# NOTE: uses CHECKLIST.md from the root of the git repo (if present) to add a pull request body
+		master_pr_message="$(echo "$BRANCH" | cat - $(git rev-parse --show-toplevel)/CHECKLIST.md 2>/dev/null )"
 		develop_pr_message="backmerge-$BRANCH"
 		tag_message="$(echo $BRANCH | sed 's|^.*/||g')"
 	fi
@@ -585,11 +601,18 @@ cmd_push() {
 }
 
 cmd_auto() {
+	DEFINE_boolean force false "set to true to auto-delete conflicting branches" f
+	parse_args "$@"
+
 	local tag="$(git describe --abbrev=0)"
 	local num="$( echo "$tag" | grep -E -o '[0-9]+$' )"
 	local nexttag="$(echo "$tag" | sed "s/$num$/$((num+1))/g")"
 
 	git hf pull
+	if flag force ; then
+		remove_existing_hotfix_and_release_branches
+	fi
+
 	git hf release start "$nexttag"
 	git hf release submit "$nexttag"
 }
