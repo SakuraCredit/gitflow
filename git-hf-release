@@ -161,16 +161,16 @@ require_no_existing_hotfix_branches() {
 
 remove_existing_hotfix_and_release_branches() {
 	local hotfix_prefix=$(git config --get hubflow.prefix.hotfix)
-	local hotfix_branches=$(echo "$(git_local_branches)" | grep "^$hotfix_prefix")
+	local hotfix_branches=$({ echo "$(git_local_branches)" | grep "^$hotfix_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$hotfix_prefix" ; })
 	echo "$hotfix_branches"
-	echo "$hotfix_branches" | cut -d/ -f2- | grep -v '^$' | while read hotfix_branch ; do
+	echo "$hotfix_branches" | rev |  cut -d/ -f1 | rev | grep -v '^$' | while read hotfix_branch ; do
 		echo git hf hotfix cancel -f "$hotfix_branch"
 		git hf hotfix cancel -f "$hotfix_branch"
 	done
         local release_prefix=$(git config --get hubflow.prefix.release)
-	local release_branches=$(echo "$(git_local_branches)" | grep "^$release_prefix")
+	local release_branches=$({ echo "$(git_local_branches)" | grep "^$release_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$release_prefix" ; })
 	echo "$release_branches"
-	echo "$release_branches" | cut -d/ -f2- | grep -v '^$' | while read release_branch ; do
+	echo "$release_branches" | rev | cut -d/ -f1 | rev | grep -v '^$' | while read release_branch ; do
 		echo git hf release cancel -f "$release_branch"
 		git hf release cancel -f "$release_branch"
 	done
@@ -181,7 +181,6 @@ require_no_existing_release_branches() {
 	local release_branches=$({ echo "$(git_local_branches)" | grep "^$release_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$release_prefix" ; })
 	local first_branch=$(echo ${release_branches} | head -n1)
 	first_branch=${first_branch#$release_prefix}
-	echo "$release_branches"
 	[ -z "$release_branches" ] || \
 		die "There is an existing release branch ($first_branch). Finish that one first."
 }
