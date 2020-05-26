@@ -266,7 +266,8 @@ cmd_submit() {
 	hubflow_fetch_latest_changes_from_origin
 
 	if [ "$FLAGS_edit" = $FLAGS_FALSE ]; then
-		master_pr_message="$BRANCH"
+		# NOTE: uses CHECKLIST.md from the root of the git repo (if present) to add a pull request body
+		master_pr_message="$(echo "$BRANCH" | cat - $(git rev-parse --show-toplevel)/CHECKLIST.md 2>/dev/null )"
 		develop_pr_message="backmerge-$BRANCH"
 		tag_message="$(echo $BRANCH | sed 's|^.*/||g')"
 	fi
