@@ -44,7 +44,7 @@
 # Common variables
 #
 
-HUBFLOW_VERSION=1.5.4b002
+HUBFLOW_VERSION=1.5.4b2
 HUBFLOW_REPO=https://github.com/sakuracredit/gitflow
 
 #
