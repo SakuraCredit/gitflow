@@ -181,6 +181,7 @@ require_no_existing_release_branches() {
 	local release_branches=$({ echo "$(git_local_branches)" | grep "^$release_prefix" ; echo "$(git_remote_branches)" | grep "^$ORIGIN/$release_prefix" ; })
 	local first_branch=$(echo ${release_branches} | head -n1)
 	first_branch=${first_branch#$release_prefix}
+	echo "$release_branches"
 	[ -z "$release_branches" ] || \
 		die "There is an existing release branch ($first_branch). Finish that one first."
 }
