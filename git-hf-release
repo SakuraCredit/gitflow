@@ -283,20 +283,12 @@ cmd_submit() {
     MASTER_PR_URL="$(tail -n 1 "$PR_URL_FILE")"
     rm -f "$PR_URL_FILE"
 
-    # make a pr for to develop
-    rm -f "$PR_URL_FILE"
-    hub pull-request -b "$DEVELOP_BASE" -m "$develop_pr_message" | tee "$PR_URL_FILE"
-    if ! test "${PIPESTATUS[0]}" = 0 ; then rm -f "$PR_URL_FILE" ; die "Failed to create pull request, error ${PIPESTATUS[0]}" ; fi
-    DEVELOP_PR_URL="$(tail -n 1 "$PR_URL_FILE")"
-    rm -f "$PR_URL_FILE"
-
 	echo
 	echo "Summary of actions:"
 	echo "- The branch '$BRANCH' was pushed to '$ORIGIN'"
 	echo "- A Pull Request from '$BRANCH' to '$MASTER_BASE' was created at '$MASTER_PR_URL'"
-	echo "- A Pull Request from '$BRANCH' to '$DEVELOP_BASE' was created at '$DEVELOP_PR_URL'"
 	echo ""
-	echo "Once both Pull Requests have been accepted, finish the release with:"
+	echo "One the Pull Request has been accepted, finish the release with:"
 	echo ""
 	echo "     git hf release finish $NAME"
 	echo
