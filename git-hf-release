@@ -288,7 +288,7 @@ cmd_submit() {
 	echo "- The branch '$BRANCH' was pushed to '$ORIGIN'"
 	echo "- A Pull Request from '$BRANCH' to '$MASTER_BASE' was created at '$MASTER_PR_URL'"
 	echo ""
-	echo "One the Pull Request has been accepted, finish the release with:"
+	echo "Once the Pull Request has been accepted, finish the release with:"
 	echo ""
 	echo "     git hf release finish $NAME"
 	echo
